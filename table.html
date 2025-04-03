@@ -2,56 +2,132 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Insight Subtypes</title>
+  <title>Insight Subtypes Explorer</title>
   <script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css">
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; max-width: 1000px; margin: 0 auto; }
-    h1 { color: #333; text-align: center; }
+    :root {
+      --primary-color: #2c3e50;
+      --hover-color: #f8f9fa;
+    }
+    body { 
+      font-family: 'Segoe UI', sans-serif; 
+      padding: 2rem;
+      background: #f5f7fa;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    #searchInput {
+      width: 100%;
+      padding: 12px 20px;
+      margin-bottom: 1rem;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      box-sizing: border-box;
+      font-size: 16px;
+    }
+    .dataTable-top, .dataTable-bottom {
+      padding: 1rem;
+      background: var(--hover-color);
+    }
+    .dataTable-input { border-radius: 5px; }
+    th { background: var(--primary-color)!important; color: white!important; }
+    tr:hover { background: var(--hover-color)!important; }
   </style>
 </head>
 <body>
-  <h1>Insight Subtypes</h1>
-  <table id="sheetTable"></table>
+  <div class="container">
+    <input type="text" id="searchInput" placeholder="Search across all columns...">
+    <table id="sheetTable"></table>
+  </div>
 
-  <script>
-    // Your Google Sheet URL with CORS proxy
-    const csvUrl = "https://corsproxy.io/?" + encodeURIComponent(
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vQxMRxkzzg1A3RWKGh0RcH52vnF20fdR6-HSvOwRa26eH65YyJy4zwoR-zDBtuupXjU9L-p4ss7fFma/pub?gid=978418623&single=true&output=csv"
-    );
+<script>
+const csvUrl = "https://corsproxy.io/?" + encodeURIComponent(
+  "YOUR_GOOGLE_SHEETS_CSV_URL_HERE"
+);
 
-    fetch(csvUrl)
-      .then(response => response.text())
-      .then(csv => {
-        const rows = csv.split('\n').map(r => r.split(','));
-        const headers = rows.shift();
-        const table = document.getElementById('sheetTable');
+// Enhanced CSV parser with error handling
+function parseCSV(text) {
+  const rows = [];
+  const lines = text.split('\n');
+  const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
 
-        // Build header
-        const thead = table.createTHead();
-        const headerRow = thead.insertRow();
-        headers.forEach(header => {
-          const th = document.createElement('th');
-          th.textContent = header.trim();
-          headerRow.appendChild(th);
-        });
+  for(let i = 1; i < lines.length; i++) {
+    const cells = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+    if(cells.length !== headers.length) continue;
+    
+    const row = {};
+    headers.forEach((header, index) => {
+      row[header] = cells[index].trim().replace(/^"(.*)"$/, '$1');
+    });
+    rows.push(row);
+  }
+  return { headers, rows };
+}
 
-        // Build body
-        const tbody = table.createTBody();
-        rows.forEach(row => {
-          const tr = tbody.insertRow();
-          row.forEach(cell => {
-            const td = tr.insertCell();
-            td.textContent = cell.trim();
-          });
-        });
+// Initialize table
+fetch(csvUrl)
+  .then(response => response.text())
+  .then(csvText => {
+    const { headers, rows } = parseCSV(csvText);
+    const table = document.getElementById('sheetTable');
+    
+    // Create header
+    const thead = table.createTHead();
+    const headerRow = thead.insertRow();
+    headers.forEach(header => {
+      const th = document.createElement('th');
+      th.textContent = header;
+      headerRow.appendChild(th);
+    });
 
-        // Enable sorting
-        new simpleDatatables.DataTable('#sheetTable', {
-          searchable: false,
-          perPage: 25
-        });
+    // Create body
+    const tbody = table.createTBody();
+    rows.forEach(rowData => {
+      const tr = tbody.insertRow();
+      headers.forEach(header => {
+        const td = tr.insertCell();
+        td.textContent = rowData[header];
       });
-  </script>
+    });
+
+    // Initialize DataTable with enhanced features
+    const dataTable = new simpleDatatables.DataTable('#sheetTable', {
+      searchable: true,
+      perPage: 25,
+      perPageSelect: [25, 50, 100],
+      labels: {
+        placeholder: "Search...",
+        searchTitle: "Search within table",
+        perPage: "entries per page",
+        noRows: "No entries found",
+        info: "Showing {start} to {end} of {rows} entries",
+        noResults: "No results match your search"
+      }
+    });
+
+    // Connect search input
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      dataTable.search(e.target.value);
+    });
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    document.getElementById('sheetTable').innerHTML = `
+      <div class="error">
+        Error loading data. Please check:<br>
+        1. Internet connection<br>
+        2. Google Sheet sharing settings<br>
+        3. Try refreshing the page
+      </div>
+    `;
+  });
+</script>
 </body>
 </html>
