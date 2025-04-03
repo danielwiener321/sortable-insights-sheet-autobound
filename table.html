@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>My Sortable Sheet</title>
+  <!-- Simple-DataTables Library -->
+  <script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest" type="text/javascript"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css"/>
+</head>
+<body>
+  <h1>Sortable Google Sheet</h1>
+  <table id="sheetTable"></table>
+
+  <script>
+    // Make sure your Google Sheet CSV link is public
+    const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQxMRxkzzg1A3RWKGh0RcH52vnF20fdR6-HSvOwRa26eH65YyJy4zwoR-zDBtuupXjU9L-p4ss7fFma/pub?gid=978418623&single=true&output=csv";
+
+    fetch(csvUrl)
+      .then(res => res.text())
+      .then(csv => {
+        const rows = csv.split('\n').map(r => r.split(','));
+        const headers = rows.shift();
+        const tableEl = document.getElementById('sheetTable');
+
+        // Create header
+        const thead = tableEl.createTHead();
+        const headerRow = thead.insertRow();
+        headers.forEach(header => {
+          const th = document.createElement('th');
+          th.textContent = header.trim();
+          headerRow.appendChild(th);
+        });
+
+        // Create body
+        const tbody = tableEl.createTBody();
+        rows.forEach(row => {
+          const tr = tbody.insertRow();
+          row.forEach(val => {
+            const td = tr.insertCell();
+            td.textContent = val.trim();
+          });
+        });
+
+        // Enable sorting
+        new simpleDatatables.DataTable('#sheetTable', {
+          searchable: false,
+          fixedHeight: true,
+        });
+      })
+      .catch(err => console.error(err));
+  </script>
+</body>
+</html>
