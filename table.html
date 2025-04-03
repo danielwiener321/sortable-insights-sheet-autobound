@@ -1,29 +1,34 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8" />
-  <title>My Sortable Sheet</title>
-  <!-- Simple-DataTables Library -->
-  <script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest" type="text/javascript"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css"/>
+  <meta charset="UTF-8">
+  <title>Insight Subtypes</title>
+  <script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css">
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 1000px; margin: 0 auto; }
+    h1 { color: #333; text-align: center; }
+  </style>
 </head>
 <body>
-  <h1>Sortable Google Sheet</h1>
+  <h1>Insight Subtypes</h1>
   <table id="sheetTable"></table>
 
   <script>
-    // Make sure your Google Sheet CSV link is public
-    const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQxMRxkzzg1A3RWKGh0RcH52vnF20fdR6-HSvOwRa26eH65YyJy4zwoR-zDBtuupXjU9L-p4ss7fFma/pub?gid=978418623&single=true&output=csv";
+    // Your Google Sheet URL with CORS proxy
+    const csvUrl = "https://corsproxy.io/?" + encodeURIComponent(
+      "https://docs.google.com/spreadsheets/d/e/2PACX-1vQxMRxkzzg1A3RWKGh0RcH52vnF20fdR6-HSvOwRa26eH65YyJy4zwoR-zDBtuupXjU9L-p4ss7fFma/pub?gid=978418623&single=true&output=csv"
+    );
 
     fetch(csvUrl)
-      .then(res => res.text())
+      .then(response => response.text())
       .then(csv => {
         const rows = csv.split('\n').map(r => r.split(','));
         const headers = rows.shift();
-        const tableEl = document.getElementById('sheetTable');
+        const table = document.getElementById('sheetTable');
 
-        // Create header
-        const thead = tableEl.createTHead();
+        // Build header
+        const thead = table.createTHead();
         const headerRow = thead.insertRow();
         headers.forEach(header => {
           const th = document.createElement('th');
@@ -31,23 +36,22 @@
           headerRow.appendChild(th);
         });
 
-        // Create body
-        const tbody = tableEl.createTBody();
+        // Build body
+        const tbody = table.createTBody();
         rows.forEach(row => {
           const tr = tbody.insertRow();
-          row.forEach(val => {
+          row.forEach(cell => {
             const td = tr.insertCell();
-            td.textContent = val.trim();
+            td.textContent = cell.trim();
           });
         });
 
         // Enable sorting
         new simpleDatatables.DataTable('#sheetTable', {
           searchable: false,
-          fixedHeight: true,
+          perPage: 25
         });
-      })
-      .catch(err => console.error(err));
+      });
   </script>
 </body>
 </html>
